@@ -30,6 +30,10 @@ repositories {
         name = 'Kyubion Mod Resources'
         url "https://raw.githubusercontent.com/Kyubion-Studios/Mod-Resources/main/maven/"
     }
+    maven {
+        name = "Quilt"
+        url = "https://maven.quiltmc.org/repository/release"
+    }
 
     exclusiveContent {
         forRepository {
@@ -93,6 +97,10 @@ dependencies {
     if (loader == "fabric" || stonecutter.eval(stonecutter.current.version, ">=1.21") && loader == "neoforge"){
         modCompileOnly("maven.modrinth:sodium:${sodium_version}")
         modCompileOnly("maven.modrinth:iris:${iris_version}")
+        // Only add Controlify if the version is defined for this MC version
+        if (project.hasProperty('controlify_version')) {
+            modCompileOnly("dev.isxander:controlify:${controlify_version}")
+        }
     }
 
     if (loader == "fabric") {
