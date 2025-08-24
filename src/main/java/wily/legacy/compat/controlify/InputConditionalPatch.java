@@ -10,6 +10,11 @@ public class InputConditionalPatch {
     private static boolean isInitialized = false;
     private static boolean isInGameplay = false;
     private static boolean isSplitscreenPawn = false;
+    // Hysteresis counters to avoid rapid flipping when transient screens appear/disappear (e.g. brief config or overlay screens)
+    private static int uiTicks = 0;
+    private static int gameplayTicks = 0;
+    private static final int HYSTERESIS_TICKS = 3; // number of consecutive ticks a state must persist before switching
+    private static String lastScreenClass = null;
     
     public static void initialize() {
         if (isInitialized) return;
@@ -52,11 +57,33 @@ public class InputConditionalPatch {
      */
     private static void updateGameplayState() {
         Minecraft mc = Minecraft.getInstance();
-        boolean newInGameplay = mc.screen == null;
-        
-        if (newInGameplay != isInGameplay) {
-            isInGameplay = newInGameplay;
-            logInputMode();
+        boolean hasScreen = mc.screen != null;
+
+        // Track the current top-level screen class name for debugging transitions
+        String currentScreenClass = mc.screen == null ? "<none>" : mc.screen.getClass().getName();
+        if (lastScreenClass == null) lastScreenClass = currentScreenClass;
+
+        // Hysteresis logic: require a screen (UI) or lack thereof (gameplay) to persist for a few ticks before toggling
+        if (hasScreen) {
+            uiTicks++;
+            gameplayTicks = 0;
+            if (isInGameplay && uiTicks >= HYSTERESIS_TICKS) {
+                isInGameplay = false;
+                logInputMode();
+            }
+        } else {
+            gameplayTicks++;
+            uiTicks = 0;
+            if (!isInGameplay && gameplayTicks >= HYSTERESIS_TICKS) {
+                isInGameplay = true;
+                logInputMode();
+            }
+        }
+
+        // Additional debug: if the screen class itself is thrashing, print once to help diagnose
+        if (!currentScreenClass.equals(lastScreenClass)) {
+            System.out.println("Legacy4J: Screen changed -> " + currentScreenClass);
+            lastScreenClass = currentScreenClass;
         }
     }
     
@@ -64,13 +91,8 @@ public class InputConditionalPatch {
      * Check if Legacy4J should process input right now
      */
     public static boolean shouldLegacyProcessInput() {
-        // If this is a splitscreen pawn, never process input with Legacy4J
-        if (isSplitscreenPawn) {
-            return false;
-        }
-        
-        // Otherwise, only process input during UI screens
-        return !isInGameplay;
+    // Deprecated: Legacy no longer processes controller input; Controlify owns all input paths.
+    public static boolean shouldLegacyProcessInput() { return false; }
     }
     
     /**
@@ -84,7 +106,7 @@ public class InputConditionalPatch {
      * Check if this is a splitscreen pawn instance
      */
     public static boolean isSplitscreenPawn() {
-        return isSplitscreenPawn;
+    public static boolean isSplitscreenPawn() { return false; }
     }
     
     /**
