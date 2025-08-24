@@ -8,8 +8,9 @@ import wily.legacy.Legacy4JClient;
  * Configuration-based integration that allows users to choose which system handles controller input
  */
 public class ControlifyCompatConfig {
-    public static boolean USE_LEGACY4J_FOR_GUI = true;
-    public static boolean USE_CONTROLIFY_FOR_GAMEPLAY = true;
+    // Unified Controlify ownership: Legacy4J no longer handles controller input for GUI or gameplay.
+    public static boolean USE_LEGACY4J_FOR_GUI = false;
+    public static boolean USE_CONTROLIFY_FOR_GAMEPLAY = true; // retained for clarity
     
     public static void init() {
         if (isControlifyPresent()) {
@@ -27,13 +28,7 @@ public class ControlifyCompatConfig {
     }
     
     private static void setupCompatibility() {
-        if (USE_LEGACY4J_FOR_GUI && USE_CONTROLIFY_FOR_GAMEPLAY) {
-            // Set up conditional input handling
-            ConditionalControllerManager.initialize();
-            System.out.println("Legacy4J: Conditional input handling enabled");
-            System.out.println("  - Controlify handles gameplay input");  
-            System.out.println("  - Legacy4J handles UI/menu input");
-        }
+    // Conditional input mode disabled; Legacy4J defers completely to Controlify.
         
         // Initialize basic integration
         ControlifyIntegration.init();

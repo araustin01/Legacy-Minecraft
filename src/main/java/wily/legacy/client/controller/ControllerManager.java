@@ -132,10 +132,12 @@ public class ControllerManager {
     }
 
     public synchronized void updateBindings() {
-        updateBindings(minecraft.isWindowActive() ? connectedController : Controller.EMPTY);
+    if (isControlifyUnified()) return; // Skip entirely; Controlify owns input
+    updateBindings(minecraft.isWindowActive() ? connectedController : Controller.EMPTY);
     }
 
     public synchronized void updateBindings(Controller controller) {
+    if (isControlifyUnified()) return; // unified mode skip
         Arrays.sort(orderedKeyMappings, Comparator.comparingInt(mapping -> LegacyKeyMapping.of(mapping).getBinding() == null ? 2 : LegacyKeyMapping.of(mapping).getBinding().isSpecial() ? 0 : 1));
         for (ControllerBinding<?> binding : ControllerBinding.map.values()) {
             BindingState state = binding.state();
@@ -354,6 +356,21 @@ public class ControllerManager {
 
         if (minecraft.screen != null) Controller.Event.of(minecraft.screen).controllerTick(controller);
         if (LegacyTipManager.getActualTip() != null) LegacyTipManager.getActualTip().controllerTick(controller);
+    }
+
+    private static boolean controlifyPresentCache = false;
+    private static boolean controlifyPresenceChecked = false;
+    private static boolean isControlifyUnified() {
+        if (!controlifyPresenceChecked) {
+            try {
+                Class.forName("dev.isxander.controlify.Controlify", false, ControllerManager.class.getClassLoader());
+                controlifyPresentCache = true;
+            } catch (Throwable ignored) {
+                controlifyPresentCache = false;
+            }
+            controlifyPresenceChecked = true;
+        }
+        return controlifyPresentCache; // presence implies unified mode (Legacy disabled)
     }
 
     public void simulateKeyAction(Predicate<BindingState> canSimulate, int key, BindingState state){

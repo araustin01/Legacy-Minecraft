@@ -14,16 +14,14 @@ public class ConditionalControllerManager {
      */
     public static void initialize() {
         // Initialize the input conditional patch system
-        InputConditionalPatch.initialize();
-        
-        System.out.println("Legacy4J: Conditional controller manager initialized");
+    // Deprecated: unified Controlify input path. Initialization retained for backward safety only.
     }
     
     /**
      * Check if Legacy4J should handle input based on current state
      */
     public static boolean shouldHandleInput() {
-        return InputConditionalPatch.shouldLegacyProcessInput();
+    return false; // always skip Legacy processing
     }
     
     /**
@@ -31,12 +29,6 @@ public class ConditionalControllerManager {
      */
     public static void conditionalUpdateBindings(ControllerManager manager, Controller controller) {
         // Check if we should process input
-        if (!shouldHandleInput()) {
-            // Don't process input - Controlify should handle it
-            return;
-        }
-        
-        // Process input normally
-        manager.updateBindings(controller);
+    // Deprecated path: Legacy controller processing disabled.
     }
 }
