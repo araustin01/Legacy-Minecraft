@@ -1,7 +1,6 @@
 package wily.legacy.compat.controlify;
 
 import dev.isxander.controlify.Controlify;
-import dev.isxander.controlify.config.GlobalSettings;
 import net.minecraft.client.Minecraft;
 import wily.legacy.Legacy4JClient;
 
@@ -10,7 +9,7 @@ import wily.legacy.Legacy4JClient;
  */
 public class ControlifyCompatConfig {
     public static boolean USE_LEGACY4J_FOR_GUI = true;
-    public static boolean USE_CONTROLIFY_FOR_DETECTION = true;
+    public static boolean USE_CONTROLIFY_FOR_GAMEPLAY = true;
     
     public static void init() {
         if (isControlifyPresent()) {
@@ -28,24 +27,16 @@ public class ControlifyCompatConfig {
     }
     
     private static void setupCompatibility() {
-        if (USE_LEGACY4J_FOR_GUI) {
-            // Disable Controlify's GUI handling
-            disableControlifyGuiHandling();
+        if (USE_LEGACY4J_FOR_GUI && USE_CONTROLIFY_FOR_GAMEPLAY) {
+            // Set up conditional input handling
+            ConditionalControllerManager.initialize();
+            System.out.println("Legacy4J: Conditional input handling enabled");
+            System.out.println("  - Controlify handles gameplay input");  
+            System.out.println("  - Legacy4J handles UI/menu input");
         }
         
-        if (USE_CONTROLIFY_FOR_DETECTION) {
-            // Use Controlify for controller detection but Legacy4J for input processing
-            ControlifyIntegration.init();
-        }
-    }
-    
-    private static void disableControlifyGuiHandling() {
-        // This would require either:
-        // 1. Modifying Controlify's config to disable screen processing
-        // 2. Using mixins to intercept and disable the screen processor
-        // 3. Setting up event listeners to override Controlify's input handling
-        
-        System.out.println("Legacy4J: Taking over GUI controller handling from Controlify");
+        // Initialize basic integration
+        ControlifyIntegration.init();
     }
     
     /**
@@ -53,7 +44,7 @@ public class ControlifyCompatConfig {
      */
     public static void checkForConflicts() {
         if (isControlifyPresent()) {
-            System.out.println("Legacy4J: Controlify detected, setting up compatibility mode");
+            System.out.println("Legacy4J: Controlify detected, conditional mode active");
         }
     }
 }
