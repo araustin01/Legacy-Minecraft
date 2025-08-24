@@ -28,8 +28,7 @@ public class ControlifyCompatConfig {
     }
     
     private static void setupCompatibility() {
-    // Conditional input mode disabled; Legacy4J defers completely to Controlify.
-        
+        // Conditional input mode disabled; Legacy4J defers completely to Controlify.
         // Initialize basic integration
         ControlifyIntegration.init();
     }

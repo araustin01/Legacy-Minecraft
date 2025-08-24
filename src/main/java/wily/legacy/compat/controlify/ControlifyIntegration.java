@@ -1,11 +1,7 @@
 package wily.legacy.compat.controlify;
 
-import dev.isxander.controlify.Controlify;
 import dev.isxander.controlify.api.event.ControlifyEvents;
 import dev.isxander.controlify.controller.ControllerEntity;
-import net.minecraft.client.gui.screens.Screen;
-import wily.legacy.client.controller.ControllerManager;
-import wily.legacy.Legacy4JClient;
 
 /**
  * Integration layer that allows Legacy4J to take control of screen navigation
