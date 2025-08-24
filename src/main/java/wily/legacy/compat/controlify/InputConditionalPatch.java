@@ -2,89 +2,101 @@ package wily.legacy.compat.controlify;
 
 import dev.isxander.controlify.api.event.ControlifyEvents;
 import net.minecraft.client.Minecraft;
-import wily.legacy.Legacy4JClient;
-import wily.legacy.client.controller.Controller;
-import wily.legacy.client.controller.ControllerManager;
-
-import java.lang.reflect.Method;
 
 /**
- * Simple patch that conditionally disables Legacy4J's controller input processing
- * when Controlify should handle it (during gameplay).
+ * Monitors game state and provides conditional logic for when Legacy4J should process input
  */
 public class InputConditionalPatch {
-    private static boolean controlifyPresent = false;
-    private static boolean isInGameplay = true;
-    private static boolean patched = false;
+    private static boolean isInitialized = false;
+    private static boolean isInGameplay = false;
+    private static boolean isSplitscreenPawn = false;
     
     public static void initialize() {
+        if (isInitialized) return;
+        isInitialized = true;
+        
+        // Check if this is a splitscreen pawn instance
+        checkSplitscreenStatus();
+        
+        // Listen for Controlify events to track state
         try {
-            Class.forName("dev.isxander.controlify.Controlify");
-            controlifyPresent = true;
-            setupPatch();
-        } catch (ClassNotFoundException e) {
-            controlifyPresent = false;
-        }
-    }
-    
-    private static void setupPatch() {
-        if (patched) return;
-        patched = true;
-        
-        // Monitor screen state changes
-        ControlifyEvents.ACTIVE_CONTROLLER_TICKED.register(event -> {
-            Minecraft mc = Minecraft.getInstance();
-            boolean newInGameplay = mc.screen == null;
+            ControlifyEvents.ACTIVE_CONTROLLER_TICKED.register(event -> {
+                updateGameplayState();
+            });
             
-            if (newInGameplay != isInGameplay) {
-                isInGameplay = newInGameplay;
-                onScreenStateChanged();
-            }
-        });
-        
-        System.out.println("Legacy4J: Input conditional patch applied");
-    }
-    
-    private static void onScreenStateChanged() {
-        String mode = isInGameplay ? "Controlify (gameplay)" : "Legacy4J (UI)";
-        System.out.println("Legacy4J: Input mode: " + mode);
-        
-        // If we switched to gameplay mode, clear any pending Legacy4J controller input
-        if (isInGameplay) {
-            clearLegacyInput();
-        }
-    }
-    
-    private static void clearLegacyInput() {
-        // Send empty controller input to Legacy4J to clear any active bindings
-        ControllerManager manager = Legacy4JClient.controllerManager;
-        if (manager != null && manager.connectedController != null) {
-            // Temporarily process with empty controller to clear state
-            manager.updateBindings(Controller.EMPTY);
+            System.out.println("Legacy4J: Input conditional patch applied");
+        } catch (Exception e) {
+            System.err.println("Legacy4J: Failed to initialize input conditional patch: " + e.getMessage());
         }
     }
     
     /**
-     * Check if Legacy4J should process controller input right now
+     * Check if this is a splitscreen pawn instance
+     */
+    private static void checkSplitscreenStatus() {
+        try {
+            // Check if the current Minecraft instance is a pawn
+            // This can be determined by checking if the user has a suffix like ".1", ".2", etc.
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.getUser() != null && mc.getUser().getName().contains(".")) {
+                isSplitscreenPawn = true;
+                System.out.println("Legacy4J: Detected splitscreen pawn instance - disabling Legacy4J input completely");
+            }
+        } catch (Exception e) {
+            System.err.println("Legacy4J: Failed to detect splitscreen status: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Update the current gameplay state
+     */
+    private static void updateGameplayState() {
+        Minecraft mc = Minecraft.getInstance();
+        boolean newInGameplay = mc.screen == null;
+        
+        if (newInGameplay != isInGameplay) {
+            isInGameplay = newInGameplay;
+            logInputMode();
+        }
+    }
+    
+    /**
+     * Check if Legacy4J should process input right now
      */
     public static boolean shouldLegacyProcessInput() {
-        // Legacy4J should only process input when:
-        // 1. Controlify is not present, OR  
-        // 2. We're in a UI screen (not in gameplay)
-        return !controlifyPresent || !isInGameplay;
+        // If this is a splitscreen pawn, never process input with Legacy4J
+        if (isSplitscreenPawn) {
+            return false;
+        }
+        
+        // Otherwise, only process input during UI screens
+        return !isInGameplay;
     }
     
     /**
-     * Check if we're currently in gameplay (no screen open)
+     * Check if currently in gameplay (no screen open)
      */
     public static boolean isInGameplay() {
         return isInGameplay;
     }
     
     /**
-     * Check if Controlify is present
+     * Check if this is a splitscreen pawn instance
      */
-    public static boolean isControlifyPresent() {
-        return controlifyPresent;
+    public static boolean isSplitscreenPawn() {
+        return isSplitscreenPawn;
+    }
+    
+    /**
+     * Log the current input mode for debugging
+     */
+    private static void logInputMode() {
+        if (isSplitscreenPawn) {
+            System.out.println("Legacy4J: Input mode: Controlify (splitscreen pawn)");
+        } else if (isInGameplay) {
+            System.out.println("Legacy4J: Input mode: Controlify (gameplay)");
+        } else {
+            System.out.println("Legacy4J: Input mode: Legacy4J (UI)");
+        }
     }
 }

@@ -1,5 +1,6 @@
 package wily.legacy.compat.controlify;
 
+import wily.legacy.Legacy4JClient;
 import wily.legacy.client.controller.Controller;
 import wily.legacy.client.controller.ControllerManager;
 
@@ -15,59 +16,27 @@ public class ConditionalControllerManager {
         // Initialize the input conditional patch system
         InputConditionalPatch.initialize();
         
-        // Wrap the controller handler to provide conditional controllers
-        wrapControllerHandler();
-        
         System.out.println("Legacy4J: Conditional controller manager initialized");
     }
     
     /**
-     * Wrap the existing controller handler with our conditional handler
+     * Check if Legacy4J should handle input based on current state
      */
-    private static void wrapControllerHandler() {
-        try {
-            // Get the current handler from ControllerManager
-            Controller.Handler currentHandler = getCurrentHandler();
-            
-            if (currentHandler != null && !(currentHandler instanceof ConditionalControllerHandler)) {
-                // Wrap it with our conditional handler
-                ConditionalControllerHandler conditionalHandler = new ConditionalControllerHandler(currentHandler);
-                
-                // Replace the handler in ControllerManager
-                setControllerHandler(conditionalHandler);
-                
-                System.out.println("Legacy4J: Controller handler wrapped with conditional processing");
-            }
-        } catch (Exception e) {
-            System.err.println("Legacy4J: Failed to wrap controller handler: " + e.getMessage());
-            e.printStackTrace();
-        }
+    public static boolean shouldHandleInput() {
+        return InputConditionalPatch.shouldLegacyProcessInput();
     }
     
     /**
-     * Get the current controller handler using reflection
+     * Conditionally process controller input for Legacy4J
      */
-    private static Controller.Handler getCurrentHandler() {
-        try {
-            java.lang.reflect.Field handlerField = ControllerManager.class.getDeclaredField("handler");
-            handlerField.setAccessible(true);
-            return (Controller.Handler) handlerField.get(null);
-        } catch (Exception e) {
-            System.err.println("Legacy4J: Failed to get controller handler: " + e.getMessage());
-            return null;
+    public static void conditionalUpdateBindings(ControllerManager manager, Controller controller) {
+        // Check if we should process input
+        if (!shouldHandleInput()) {
+            // Don't process input - Controlify should handle it
+            return;
         }
-    }
-    
-    /**
-     * Set the controller handler using reflection
-     */
-    private static void setControllerHandler(Controller.Handler handler) {
-        try {
-            java.lang.reflect.Field handlerField = ControllerManager.class.getDeclaredField("handler");
-            handlerField.setAccessible(true);
-            handlerField.set(null, handler);
-        } catch (Exception e) {
-            System.err.println("Legacy4J: Failed to set controller handler: " + e.getMessage());
-        }
+        
+        // Process input normally
+        manager.updateBindings(controller);
     }
 }
