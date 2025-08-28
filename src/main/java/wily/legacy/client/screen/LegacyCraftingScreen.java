@@ -22,6 +22,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerListener;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.*;
 //? if >=1.20.5 {
 import net.minecraft.world.item.component.FireworkExplosion;
@@ -47,6 +48,8 @@ import wily.factoryapi.util.PagedList;
 import wily.legacy.Legacy4J;
 import wily.legacy.Legacy4JClient;
 import wily.legacy.client.*;
+import wily.legacy.client.widget.LegacyHitboxWidget;
+import wily.legacy.client.widget.LegacySlotHitboxWidget;
 import wily.legacy.init.LegacyRegistries;
 import wily.legacy.inventory.ImpossibleIngredient;
 import wily.legacy.mixin.base.FireworkRocketRecipeAccessor;
@@ -73,6 +76,8 @@ import static wily.legacy.client.screen.RecipeIconHolder.getActualItem;
 public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event,TabList.Access {
     private final Inventory inventory;
     protected final List<ItemStack> compactItemStackList = new ArrayList<>();
+    // Controlify compatibility: List of navigation hitbox widgets
+    private final List<LegacyHitboxWidget> navHitboxes = new ArrayList<>();
     private final boolean is2x2;
     private final int gridDimension;
     private boolean onlyCraftableRecipes = false;
@@ -321,6 +326,7 @@ public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCrafting
         infoType.set(0);
         craftingButtonsOffset.set(0);
         if (reposition) repositionElements();
+        rebuildNavHitboxes(); // Controlify compatibility: rebuild hitboxes when layout changes
     }
     protected CustomCraftingIconHolder craftingButtonByRecipes(Component displayName, List<RecipeInfo<CraftingRecipe>> recipes){
         List<ItemStack> results = recipes.stream().map(RecipeInfo::getResultItem).toList();
@@ -523,6 +529,7 @@ public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCrafting
             b.setY(topPos + i + 4);
             b.offset = (t1) -> new Vec3(t1.selected ? 0 : 3.5, 0.5, 0);
         },true);
+        rebuildNavHitboxes(); // Controlify compatibility
     }
 
     public TabList getTabList(){
@@ -536,6 +543,72 @@ public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCrafting
 
     public boolean hasTypeTabList(){
         return accessor.getBoolean("hasTypeTabList",true);
+    }
+
+    /**
+     * Controlify compatibility: Rebuild navigation hitbox widgets for all interactive elements.
+     * Call this whenever tabs/pages/filters change visibility/layout.
+     */
+    private void rebuildNavHitboxes() {
+        // Remove previous hitboxes
+        for (LegacyHitboxWidget widget : navHitboxes) {
+            this.removeWidget(widget);
+        }
+        navHitboxes.clear();
+
+        // Add slot hitboxes
+        for (Slot slot : this.getMenu().slots) {
+            LegacySlotHitboxWidget slotWidget = new LegacySlotHitboxWidget(this, slot, leftPos, topPos);
+            navHitboxes.add(slotWidget);
+            this.addRenderableWidget(slotWidget);
+        }
+
+        // Add tab hitboxes
+        if (hasTypeTabList()) {
+            for (LegacyTabButton tab : typeTabList.tabButtons) {
+                LegacyHitboxWidget tabWidget = new LegacyHitboxWidget(tab.getX(), tab.getY(), tab.getWidth(), tab.getHeight());
+                navHitboxes.add(tabWidget);
+                this.addRenderableWidget(tabWidget);
+            }
+        }
+
+        TabList currentTabList = getTabList();
+        for (LegacyTabButton tab : currentTabList.tabButtons) {
+            LegacyHitboxWidget tabWidget = new LegacyHitboxWidget(tab.getX(), tab.getY(), tab.getWidth(), tab.getHeight());
+            navHitboxes.add(tabWidget);
+            this.addRenderableWidget(tabWidget);
+        }
+
+        // Add scroll arrow hitboxes (if visible)
+        if (typeTabList.selectedTab == 0 || !hasTypeTabList()) {
+            if (craftingButtonsOffset.get() > 0) {
+                LegacyHitboxWidget leftScrollWidget = new LegacyHitboxWidget(leftPos + 5, topPos + 45, 6, 16);
+                navHitboxes.add(leftScrollWidget);
+                this.addRenderableWidget(leftScrollWidget);
+            }
+            if (craftingButtonsOffset.max > 0 && craftingButtonsOffset.get() < craftingButtonsOffset.max) {
+                LegacyHitboxWidget rightScrollWidget = new LegacyHitboxWidget(leftPos + imageWidth - 11, topPos + 45, 6, 16);
+                navHitboxes.add(rightScrollWidget);
+                this.addRenderableWidget(rightScrollWidget);
+            }
+        }
+
+        // Add crafting grid ingredient hitboxes
+        int panelWidth = accessor.getInteger("craftingGridPanelWidth", 163);
+        int contentsWidth = (is2x2 ? 2 : 3) * 23 + 69;
+        int xDiff = leftPos + 9 + (panelWidth - contentsWidth) / 2;
+        for (int index = 0; index < ingredientsGrid.size(); index++) {
+            int x = xDiff + index % gridDimension * 23;
+            int y = topPos + (is2x2 ? 145 : 133) + index / gridDimension * 23;
+            LegacyHitboxWidget ingredientWidget = new LegacyHitboxWidget(x, y, 23, 23);
+            navHitboxes.add(ingredientWidget);
+            this.addRenderableWidget(ingredientWidget);
+        }
+
+        // Add result slot hitbox
+        LegacyHitboxWidget resultWidget = new LegacyHitboxWidget(xDiff + contentsWidth - 36, topPos + 151, 36, 36);
+        navHitboxes.add(resultWidget);
+        this.addRenderableWidget(resultWidget);
     }
 
     protected boolean canCraft(List<Optional<Ingredient>> ingredients, boolean isFocused) {
