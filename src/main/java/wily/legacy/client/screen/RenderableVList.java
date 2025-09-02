@@ -253,6 +253,29 @@ public class RenderableVList {
         }
     }
 
+    // ===== Controlify public accessors (non-breaking) =====
+    /** Current scroll index (row based). */
+    public int getScrollIndex() { return scrolledList.get(); }
+    /** True if more items can scroll downward. */
+    public boolean canScrollDown() { return canScrollDown; }
+    /** Number of renderables currently laid out (visible window size). */
+    public int getVisibleRenderableCount() { return renderablesCount; }
+    /** Total number of renderables in list. */
+    public int getTotalRenderableCount() { return renderables.size(); }
+    /** Scroll by logical line amount (positive=down, negative=up). */
+    public boolean scrollByLines(int lines) {
+        if (lines == 0) return false;
+        int target = Math.max(0, scrolledList.get() + getLineAmount(lines));
+        if (target != scrolledList.get()) {
+            scrolledList.set(target);
+            accessor.reloadUI();
+            return true;
+        }
+        return false;
+    }
+    /** Force recompute of layout (exposed for external UI refresh). */
+    public void refreshLayout() { accessor.reloadUI(); }
+
     public boolean isHovered(double x, double y){
         return ScreenUtil.isMouseOver(x,y,leftPos,topPos,listWidth,listHeight == 0 ? getScreen().height : listHeight);
     }

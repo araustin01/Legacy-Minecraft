@@ -37,7 +37,7 @@ import static wily.legacy.util.LegacySprites.ARROW;
 import static wily.legacy.client.screen.ControlTooltip.*;
 
 
-public class LegacyStonecutterScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event {
+public class LegacyStonecutterScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event, ControlifyContainerAccess {
     public static final Vec3 DISPLAY_OFFSET = new Vec3(0.5,0,0);
     protected List<RecipeIconHolder<StonecutterRecipe>>  craftingButtons = new ArrayList<>();;
     protected List<List<RecipeInfo<StonecutterRecipe>>> recipesByGroup = new ArrayList<>();
@@ -121,6 +121,14 @@ public class LegacyStonecutterScreen extends AbstractContainerScreen<LegacyCraft
         guiGraphics.drawString(this.font, title,(imageWidth - font.width(title)) / 2, 17, CommonColor.INVENTORY_GRAY_TEXT.get(), false);
         guiGraphics.drawString(this.font, this.playerInventoryTitle, (355 + 160 - font.width(playerInventoryTitle))/ 2, 109, CommonColor.INVENTORY_GRAY_TEXT.get(), false);
     }
+
+    // ControlifyContainerAccess
+    @Override
+    public net.minecraft.world.inventory.Slot controlify$getHoveredSlot() { return hoveredSlot; }
+    @Override
+    public void controlify$setHoveredSlot(net.minecraft.world.inventory.Slot slot) { this.hoveredSlot = slot; }
+    @Override
+    public void controlify$slotClick(net.minecraft.world.inventory.Slot slot, int slotId, int button, net.minecraft.world.inventory.ClickType clickType) { this.slotClicked(slot, slotId, button, clickType); }
     @Override
     public void renderBg(GuiGraphics guiGraphics, float f, int i, int j) {
         FactoryGuiGraphics.of(guiGraphics).blitSprite(accessor.getElementValue("imageSprite",LegacySprites.SMALL_PANEL, ResourceLocation.class),leftPos,topPos,imageWidth,imageHeight);

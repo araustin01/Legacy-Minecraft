@@ -34,6 +34,7 @@ import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.entity.*;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 import wily.factoryapi.FactoryAPIPlatform;
 import wily.factoryapi.base.FactoryIngredient;
 import wily.factoryapi.base.StackIngredient;
@@ -73,7 +74,7 @@ import static wily.legacy.util.LegacySprites.SMALL_ARROW;
 import static wily.legacy.client.screen.ControlTooltip.*;
 import static wily.legacy.client.screen.RecipeIconHolder.getActualItem;
 
-public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event,TabList.Access {
+public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event,TabList.Access, ControlifyContainerAccess {
     private final Inventory inventory;
     protected final List<ItemStack> compactItemStackList = new ArrayList<>();
     // Controlify compatibility: List of navigation hitbox widgets
@@ -303,6 +304,40 @@ public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCrafting
             canCraft(ingredientsGrid,true);
         }).enableAddIngredients(h->h.addedIngredientsItems.size() < 4));
     }
+
+    // ===== Controlify accessors (non-breaking) =====
+    /** Currently selected crafting tab index (page-relative). */
+    public int getSelectedCraftingTab() { return craftingTabList.selectedTab; }
+    /** Total crafting tab pages. */
+    public int getCraftingTabPage() { return page.get(); }
+    /** Switch crafting tab relative direction (wrapping). */
+    public void cycleCraftingTab(int dir) {
+        int prev = craftingTabList.selectedTab;
+    if (dir == 0 || craftingTabList.tabButtons.isEmpty()) return;
+    int next = (prev + dir + craftingTabList.tabButtons.size()) % craftingTabList.tabButtons.size();
+    if (next != prev) craftingTabList.tabButtons.get(next).onPress();
+    }
+    /** Whether recipe info panel (infoType) is toggled beyond base index. */
+    public boolean isAltInfoActive() { return infoType.get() != 0; }
+    /** Toggle info panel variant. */
+    public void toggleInfoType() { infoType.set((infoType.get()+1) % (infoType.max + 1)); }
+    /** Number of visible recipe buttons. */
+    public int getVisibleRecipeButtonCount() { return craftingButtons.size(); }
+    /** Currently selected recipe button index. */
+    public int getSelectedRecipeButton() { return selectedCraftingButton; }
+    /** Cycle selected recipe button with wrap. */
+    public void cycleRecipeButton(int dir) {
+        if (craftingButtons.isEmpty()) return;
+        selectedCraftingButton = (selectedCraftingButton + dir + craftingButtons.size()) % craftingButtons.size();
+    }
+
+    // ControlifyContainerAccess
+    @Override
+    public net.minecraft.world.inventory.Slot controlify$getHoveredSlot() { return hoveredSlot; }
+    @Override
+    public void controlify$setHoveredSlot(net.minecraft.world.inventory.Slot slot) { this.hoveredSlot = slot; }
+    @Override
+    public void controlify$slotClick(net.minecraft.world.inventory.Slot slot, int slotId, int button, net.minecraft.world.inventory.ClickType clickType) { this.slotClicked(slot, slotId, button, clickType); }
 
     @Override
     public void addControlTooltips(Renderer renderer) {
@@ -798,9 +833,11 @@ public class LegacyCraftingScreen extends AbstractContainerScreen<LegacyCrafting
 
     @Override
     public boolean keyPressed(int i, int j, int k) {
-        if (hasTypeTabList() && hasShiftDown() && typeTabList.controlTab(i)) return true;
+        if (hasTypeTabList() && (k == GLFW.GLFW_MOD_SHIFT || hasShiftDown()) && typeTabList.controlTab(i))
+            return true;
         getTabList().controlTab(i);
-        if (hasShiftDown() && controlPage(i == 263, i == 262)) return true;
+        if ((k == GLFW.GLFW_MOD_SHIFT || hasShiftDown()) && controlPage(i == 263, i == 262))
+            return true;
         return super.keyPressed(i, j, k);
     }
     protected boolean controlPage(boolean left, boolean right){

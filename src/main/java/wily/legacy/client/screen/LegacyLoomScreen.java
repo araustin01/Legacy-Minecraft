@@ -57,7 +57,7 @@ import static wily.legacy.client.screen.ControlTooltip.*;
 import static wily.legacy.client.screen.LegacyCraftingScreen.clearIngredients;
 import static wily.legacy.client.screen.RecipeIconHolder.getActualItem;
 
-public class LegacyLoomScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event,TabList.Access {
+public class LegacyLoomScreen extends AbstractContainerScreen<LegacyCraftingMenu> implements Controller.Event,ControlTooltip.Event,TabList.Access, ControlifyContainerAccess {
     private final Inventory inventory;
     protected final List<ItemStack> compactInventoryList = new ArrayList<>();
     protected final List<Optional<Ingredient>> ingredientsGrid = new ArrayList<>(Collections.nCopies(9,Optional.empty()));
@@ -217,6 +217,28 @@ public class LegacyLoomScreen extends AbstractContainerScreen<LegacyCraftingMenu
 
         }
     };
+
+    // ===== Controlify accessors (non-breaking) =====
+    public int getSelectedPatternTab() { return craftingTabList.selectedTab; }
+    public void cyclePatternTab(int dir) {
+    if (craftingTabList.tabButtons.isEmpty() || dir == 0) return;
+    int next = (craftingTabList.selectedTab + dir + craftingTabList.tabButtons.size()) % craftingTabList.tabButtons.size();
+    if (next != craftingTabList.selectedTab) craftingTabList.tabButtons.get(next).onPress();
+    }
+    public int getVisiblePatternButtonCount() { return craftingButtons.size(); }
+    public int getSelectedPatternButton() { return selectedCraftingButton; }
+    public void cyclePatternButton(int dir) {
+        if (craftingButtons.isEmpty()) return;
+        selectedCraftingButton = (selectedCraftingButton + dir + craftingButtons.size()) % craftingButtons.size();
+    }
+
+    // ControlifyContainerAccess
+    @Override
+    public net.minecraft.world.inventory.Slot controlify$getHoveredSlot() { return hoveredSlot; }
+    @Override
+    public void controlify$setHoveredSlot(net.minecraft.world.inventory.Slot slot) { this.hoveredSlot = slot; }
+    @Override
+    public void controlify$slotClick(net.minecraft.world.inventory.Slot slot, int slotId, int button, net.minecraft.world.inventory.ClickType clickType) { this.slotClicked(slot, slotId, button, clickType); }
     protected int selectedCraftingButton;
     protected boolean inited;
     public LegacyLoomScreen(LegacyCraftingMenu abstractContainerMenu, Inventory inventory, Component component) {
