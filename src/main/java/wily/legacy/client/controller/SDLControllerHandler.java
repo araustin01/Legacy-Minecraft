@@ -96,6 +96,9 @@ public class SDLControllerHandler implements Controller.Handler{
     }
 
     public void openNativesScreen(Minecraft minecraft){
+        if (true) {
+            return; // disable for now
+        }
         Screen s = minecraft.screen;
         minecraft.setScreen(new ConfirmationScreen(s, Component.translatable("legacy.menu.download_natives",getName()), Controller.Handler.DOWNLOAD_MESSAGE, b -> {
             Stocker<Long> fileSize = new Stocker<>(1L);

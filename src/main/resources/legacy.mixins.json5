@@ -71,7 +71,7 @@
     "client.brewing.BrewingStandScreenMixin",
     "client.cartography.CartographyTableScreenMixin",
     "client.chat.ChatComponentMixin",
-    "client.chat.ChatScreenMixin",
+    /*"client.chat.ChatScreenMixin",*/
     "ClientEntityMixin",
     "ClientLevelSettingsMixin",
     "ClientLevelStorageSourceMixin",
