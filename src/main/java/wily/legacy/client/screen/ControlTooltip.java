@@ -497,7 +497,7 @@ public interface ControlTooltip {
 
         @Override
         public void render(GuiGraphics guiGraphics, int i, int j, float f) {
-            if (!LegacyOptions.inGameTooltips.get() && minecraft.screen == null || !LegacyOptions.displayControlTooltips.get()) return;
+            if (true || !LegacyOptions.inGameTooltips.get() && minecraft.screen == null || !LegacyOptions.displayControlTooltips.get()) return;
             renderTooltips.clear();
             for (ControlTooltip tooltip : tooltips) {
                 Component action;
