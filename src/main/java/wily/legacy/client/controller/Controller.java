@@ -70,6 +70,9 @@ public interface Controller {
     }
 
     default void addOrSetControllerToast(Component component){
+        // Forced disabled: suppress all controller connect/disconnect toasts regardless of config.
+        return;
+        /* Original implementation retained below for reference.
         if (!LegacyOptions.controllerToasts.get()) return;
         LegacyTip oldToast = FactoryAPIClient.getToasts().getToast(LegacyTip.class, Toast.NO_TOKEN);
         Component tip = Component.literal(getName());
@@ -78,6 +81,7 @@ public interface Controller {
         } else {
             oldToast.tip(tip).title(component).disappearTime(4500);
         }
+        */
     }
 
     Handler getHandler();
